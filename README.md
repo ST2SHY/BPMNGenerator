@@ -1,7 +1,7 @@
 # BPMN Code Generation and Verification Framework
 
 ## 项目简介
-本仓库用于实现基于 AI 和机器学习的 BPMN 代码生成与验证框架，
+本仓库用于实现基于 LLM 的 BPMN 代码生成与验证框架，
 其核心功能包括：
 - **BPMN 生成**：利用 LLM 生成 BPMN 相关组件。
 - **模型验证**：调用验证工具验证生成的 BPMN 质量。
