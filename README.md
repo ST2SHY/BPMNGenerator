@@ -9,8 +9,8 @@
 ## 仓库结构
 ```
 .
-├── generator/        # 生成 BPMN 相关组件的脚本
-├── verifier/         # 验证工具的调用脚本
+├── generation/        # 生成 BPMN 相关组件的脚本
+├── verification/         # 验证工具的调用脚本
 ├── .secret          # 记录 GPT API 号的文件（需手动创建）
 ├── README.md        # 项目说明文件
 ```
