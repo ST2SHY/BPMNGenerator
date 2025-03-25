@@ -1,29 +1,31 @@
 # BPMN Code Generation and Verification Framework
 
-## 项目简介
-本仓库用于实现基于 LLM 的 BPMN 代码生成与验证框架，
-其核心功能包括：
-- **BPMN 生成**：利用 LLM 生成 BPMN 相关组件。
-- **模型验证**：调用验证工具验证生成的 BPMN 质量。
+> ⚠️ *Note: This documentation is still being updated.*
 
-## 仓库结构
+## Project Overview
+This repository implements a BPMN code generation and verification framework based on Large Language Models (LLMs).  
+The core functionalities include:
+- **BPMN Generation**: Use LLMs to generate BPMN-related components.
+- **Model Verification**: Use verification tools to validate the quality of generated BPMN models.
+
+## Repository Structure
 ```
 .
-├── generation/        # 生成 BPMN 相关组件的脚本
-├── verification/         # 验证工具的调用脚本
-├── .secret          # 记录 GPT API 号的文件（需手动创建）
-├── README.md        # 项目说明文件
+├── generation/        # Scripts for generating BPMN components
+├── verification/      # Scripts for invoking verification tools
+├── .secret            # File storing the GPT API key (must be created manually)
+├── README.md          # Project documentation
 ```
 
-### `generator/`
-该文件夹包含用于生成 BPMN 组件的一系列 Python 脚本。
+### `generation/`
+This folder contains a series of Python scripts for generating BPMN components.
 
-### `verifier/`
-该文件夹包含调用验证工具的一系列 Python 脚本，用于检查 BPMN 模型的正确性。
+### `verification/`
+This folder contains Python scripts that call verification tools to check the correctness of BPMN models.
 
 ### `.secret`
-该文件用于存储 GPT 的 API 号，确保生成过程能够正常访问 API。
-> **注意**：此文件不应提交到版本控制系统（如 Git），请在 `.gitignore` 文件中添加 `.secret` 以避免泄露敏感信息。
+This file stores the GPT API key, allowing access to the API during the generation process.  
+> **Note**: This file should **not** be committed to version control systems (like Git). Be sure to add `.secret` to your `.gitignore` file to avoid exposing sensitive information.
 
-## 许可证
-本项目基于 MIT 许可证发布，详见 [LICENSE](LICENSE) 文件。
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
