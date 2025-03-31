@@ -8,18 +8,6 @@ def convert_bpmn_to_petri_net(bpmn_file_path: str):
 
     petri_net = BpmnToPetriNetConverter().apply(bpmn_model)
 
-    print("\nPlaces:")
-    for place in petri_net.places:
-        print(f" - {place.name}")
-
-    print("\nTransitions:")
-    for transition in petri_net.transitions:
-        print(f" - {transition.name}")
-
-    print("\nArcs:")
-    for arc in petri_net.arcs:
-        print(f" - {arc.source.name} -> {arc.target.name}")
-
     visualize_petri_net(petri_net)
 
 
