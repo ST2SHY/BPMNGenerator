@@ -1,0 +1,2 @@
+WORKPLACE: "workplace/"
+GENERATOR_PROMPT: "You are an expert in Business Process Management (BPM) and process analysis. Your task is to carefully analyze a given BPM requirement and identify the key components: actors, tasks, and their relationships. Your output must be well-structured, concise, and adhere strictly to the specified format."
