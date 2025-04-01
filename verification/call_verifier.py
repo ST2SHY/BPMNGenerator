@@ -57,7 +57,4 @@ def main(ctl_path: str, bpmn_path: str):
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 3:
-        print("Usage: python main.py <path_to_ctl_file> <path_to_bpmn_file>")
-        exit(1)
     main(sys.argv[1], sys.argv[2])
