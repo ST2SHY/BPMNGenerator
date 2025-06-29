@@ -5,8 +5,6 @@ This module provides the main function to generate complete BPMN data
 by integrating actors, tasks, control flows, and gateways.
 """
 
-import xml.etree.ElementTree as ET
-from xml.dom import minidom
 import json
 import os
 import datetime
@@ -14,7 +12,8 @@ from utils.configure import get_workplace
 from generation.symbol import generate_symbol, get_symbol_data
 from generation.task import generate_task_with_extra, get_full_task_data
 from generation.seq import generate_updated_flow
-
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 
 # Configuration constants
 ENABLE_DUMP = True  # Toggle switch for dump functionality
@@ -164,6 +163,13 @@ def generate_bpmn_data():
     return bpmn_data
 
 
+def prettify_xml(elem):
+    """Format XML with proper indentation."""
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")
+
+
 def generate_collaboration_bpmn(bpmn_data):
     """
     Generate BPMN 2.0 XML for collaboration diagram (multiple actors).
@@ -174,14 +180,6 @@ def generate_collaboration_bpmn(bpmn_data):
     Returns:
         XML string in BPMN 2.0 format
     """
-
-
-def prettify_xml(elem):
-        """Format XML with proper indentation."""
-    rough_string = ET.tostring(elem, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
-
     # BPMN namespaces
     ns = {
         'bpmn': "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -393,7 +391,7 @@ def prettify_xml(elem):
                             # Check if this message flow already exists
                             if (base_task_symbol, msg_task_symbol) not in existing_message_flows:
                                 # Create message flow in collaboration
-        ET.SubElement(collaboration, 'messageFlow', {
+                                ET.SubElement(collaboration, 'messageFlow', {
                                     'id': f"MessageFlow_{base_task_symbol}_to_{msg_task_symbol}",
                                     'sourceRef': base_task_symbol,
                                     'targetRef': msg_task_symbol
@@ -420,15 +418,6 @@ def generate_process_bpmn(bpmn_data):
     Returns:
         XML string in BPMN 2.0 format
     """
-    import xml.etree.ElementTree as ET
-    from xml.dom import minidom
-
-    def prettify_xml(elem):
-        """Format XML with proper indentation."""
-        rough_string = ET.tostring(elem, 'utf-8')
-        reparsed = minidom.parseString(rough_string)
-        return reparsed.toprettyxml(indent="  ")
-
     # BPMN namespaces
     ns = {
         'bpmn': "http://www.omg.org/spec/BPMN/20100524/MODEL",
