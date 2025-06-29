@@ -1,88 +1,112 @@
-# Generate symbol table
-from utils.load_requirement import get_reqstring
-from utils.regex import extract_symbol
-from utils.configure import get_generator_prompt, get_workplace
-from utils.prompt import ask_openai
-from utils.dump import dump
-from string import Template
+"""
+Generate symbol table from requirements.
+
+This module extracts actors and tasks from business requirements
+and generates a structured symbol table for BPMN generation.
+"""
+
 import json
-
-prompt_format = Template('''
-Here is a BPM (Business Process Management) requirement:
-
-$REQUIREMENT
-
-Your task is to analyze the given requirement and perform the following steps:
-
-1. **Identify Actors**:
-   - Extract all distinct actors mentioned in the requirement.
-   - Assign a unique symbol to each actor (e.g., Actor1: A, Actor2: B, etc.).
-
-2. **Define Activities or Actions**:
-   - Identify all distinct activities or actions within the requirement.
-   - **If a task description contains multiple actions, split them into separate tasks**. 
-   - Pay special attention to phrases that indicate multiple actions, such as:
-     - Compound verbs (e.g., "selects a pizza and places an order" → **split into** "selects a pizza" and "places an order").
-     - Sequential actions (e.g., "A does X before Y" → **split into** separate tasks for X and Y).
-     - Conditions (e.g., "A does X if Y" → **split into** tasks for X and Y).
-
-3. **Assign Unique Symbols**:
-   - Assign a unique symbol to each activity or action (e.g., Task1: T1, Task2: T2, etc.), ensuring each task is distinct.
-
-4. **Map Activities to Actors**:
-   - For each identified activity or action, specify the actor(s) responsible for performing it.
-
-5. **Output the Results**:
-
-   Present the analysis in the following format:
-   ```json
-   {  
-     "actors": [(actor_name, symbol)],  
-     "tasks": [
-       (actor_symbol, task_description, task_symbol)
-     ]  
-   }
-
-Explain the Reasons:
-
-Provide a concise explanation for the identification and mapping of actors and tasks.
-Justify why each actor and task was assigned in the way described.
-Make sure the symbols are clear and the relationships between actors and tasks are logical. If there are ambiguities, explain your assumptions.
-''')
-
-dump_filename = 'symbol_table.json'
+import os
+from utils.agent import generate_prompt_from_config
+from utils.configure import get_workplace
+from utils.load_requirement import get_reqstring
+from utils.dump import get_data_from_file_or_generate, save_result, ENABLE_DUMP
 
 
-def get_formatted_prompt():
-    try:
-        reqstring = get_reqstring()
-        return prompt_format.substitute(REQUIREMENT=reqstring)
-    except Exception as e:
-        print(f'Error:{e}')
+# Configuration path - can be moved to external config file later
+SYMBOL_CONFIG_PATH = "generation/config/symbol.json"
+SYMBOL_OUTPUT_FILE = "symbol_output.json"
 
 
-def get_symbol():
-    try:
-        workplace = get_workplace()
-        with open(workplace / 'dump' / dump_filename, 'r') as file:
-            data = json.load(file)
-        return data
-    except Exception as e:
-        print(f'Error:{e}')
+def add_start_end_tasks(extracted_output):
+    """
+    Add start and end tasks for each actor in the extracted output.
+
+    Args:
+        extracted_output: Dictionary containing actor and tasks data
+
+    Returns:
+        Modified extracted_output with start and end tasks added
+    """
+    if 'actor' in extracted_output and 'tasks' in extracted_output:
+        actors = extracted_output['actor']
+        tasks = extracted_output['tasks']
+
+        # Add start and end tasks for each actor
+        for i, actor in enumerate(actors):
+            if isinstance(actor, dict) and 'actor_name' in actor:
+                actor_symbol = actor.get('symbol', f'A{i+1}')
+
+                # Add start task
+                start_task = {
+                    "actor_symbol": actor_symbol,
+                    "task_description": f"initial of {actor['actor_name']}",
+                    "task_symbol": f"S{i+1}"
+                }
+                tasks.append(start_task)
+
+                # Add end task
+                end_task = {
+                    "actor_symbol": actor_symbol,
+                    "task_description": f"end of {actor['actor_name']}",
+                    "task_symbol": f"E{i+1}"
+                }
+                tasks.append(end_task)
+
+        # Update the extracted_output with modified tasks
+        extracted_output['tasks'] = tasks
+
+    return extracted_output
 
 
-def update_symbol(data):
-    dump(data, dump_filename)
+def get_symbol_data():
+    """
+    Get symbol data either from file or by generating.
+
+    Returns:
+        Dictionary containing symbol data
+    """
+    return get_data_from_file_or_generate(SYMBOL_OUTPUT_FILE, generate_symbol, "symbol data")
 
 
 def generate_symbol():
-    sys_prompt = get_generator_prompt()
-    ret = ask_openai(system=sys_prompt, prompt=get_formatted_prompt())
-    print(ret)
-    data = extract_symbol(ret)
-    update_symbol(data)
+    """
+    Generate symbol table from requirements.
+
+    Returns:
+        Dictionary containing extracted actors and tasks
+    """
+    # Get requirement string
+    requirement = get_reqstring()
+
+    # Prepare input variables
+    input_vars = {
+        "REQUIREMENT": requirement
+    }
+
+    # Generate symbol output using agent
+    result = generate_prompt_from_config(SYMBOL_CONFIG_PATH, input_vars)
+
+    # Extract the output and return directly
+    extracted_output = result.get('extracted_output', {})
+
+    # Add start and end tasks for each actor
+    extracted_output = add_start_end_tasks(extracted_output)
+
+    # Save full results for debugging (if enabled)
+    save_result(result, SYMBOL_OUTPUT_FILE, "Symbol generation")
+
+    print("Extracted output:")
+    print(json.dumps(extracted_output, ensure_ascii=False, indent=2))
+
+    return extracted_output
 
 
 if __name__ == '__main__':
-    print(get_formatted_prompt())
-    # generate_symbol()
+    try:
+        print("Starting symbol generation...")
+        symbol_result = generate_symbol()
+        print("Symbol generation successful!")
+        print(symbol_result)
+    except (FileNotFoundError, ValueError, json.JSONDecodeError, KeyError) as e:
+        print(f"Symbol generation failed: {e}")
