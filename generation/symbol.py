@@ -10,7 +10,7 @@ import os
 from utils.agent import generate_prompt_from_config
 from utils.configure import get_workplace
 from utils.load_requirement import get_reqstring
-from utils.dump import get_data_from_file_or_generate, save_result, ENABLE_DUMP
+from utils.dump import get_data_from_file_or_generate, save_result
 
 
 # Configuration path - can be moved to external config file later

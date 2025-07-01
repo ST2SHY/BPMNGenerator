@@ -1,11 +1,24 @@
-from bpmn_diagram_layout.layout import layout_bpmn_diagram
+import subprocess
+import sys
+import os
 
-MODELNAME = ''
 
-with open(MODELNAME, "r") as f:
-    bpmn_xml = f.read()
+def layout_bpmn_with_bpmnjs(input_bpmn, output_bpmn, node_script='bpmn_layout.js'):
+    """
+    Call Node.js script to layout BPMN and generate DI info using bpmn-js.
+    """
+    subprocess.run(['node', node_script, input_bpmn, output_bpmn], check=True)
 
-bpmn_with_di = layout_bpmn_diagram(bpmn_xml)
 
-with open(MODELNAME, "w") as f:
-    f.write(bpmn_with_di)
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: python bpmn_diagram.py <input.bpmn> <output_with_di.bpmn>")
+        sys.exit(1)
+    input_bpmn = sys.argv[1]
+    output_bpmn = sys.argv[2]
+    layout_bpmn_with_bpmnjs(input_bpmn, output_bpmn)
+    print(f"BPMN layout with DI generated: {output_bpmn}")
+
+
+if __name__ == '__main__':
+    main()
