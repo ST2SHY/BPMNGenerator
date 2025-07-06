@@ -15,13 +15,20 @@ from generation.task import generate_task_with_extra, get_full_task_data
 from generation.symbol import get_symbol_data
 
 
-# Configuration path - can be moved to external config file later
-SEQ_CONFIG_PATH = "generation/config/seq.json"
-GATE_CONFIG_PATH = "generation/config/gate.json"
-SEQ_OUTPUT_FILE = "seq_output.json"
-GATE_OUTPUT_FILE = "gate_output.json"
-TASK_OUTPUT_FILE = "task_output.json"
-SYMBOL_OUTPUT_FILE = "symbol_output.json"
+# Configuration paths loaded from configure.yml
+from utils.configure import get_generation_config_path, get_output_file_name
+
+SEQ_CONFIG_PATH = get_generation_config_path(
+    "SEQ_CONFIG_PATH") or "generation/config/seq.json"
+GATE_CONFIG_PATH = get_generation_config_path(
+    "GATE_CONFIG_PATH") or "generation/config/gate.json"
+SEQ_OUTPUT_FILE = get_output_file_name("SEQ_OUTPUT_FILE") or "seq_output.json"
+GATE_OUTPUT_FILE = get_output_file_name(
+    "GATE_OUTPUT_FILE") or "gate_output.json"
+TASK_OUTPUT_FILE = get_output_file_name(
+    "TASK_OUTPUT_FILE") or "task_output.json"
+SYMBOL_OUTPUT_FILE = get_output_file_name(
+    "SYMBOL_OUTPUT_FILE") or "symbol_output.json"
 ENABLE_DUMP = True  # Toggle switch for dump functionality
 
 

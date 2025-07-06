@@ -8,12 +8,17 @@ from utils.agent import generate_prompt_from_config
 from utils.configure import get_workplace
 from generation.task import generate_task_with_extra
 
-# Configuration and file path constants
-REFINE_SEQ_CONFIG_PATH = "generation/config/refine_seq.json"
-SEQ_OUTPUT_FILE = "seq_output.json"
-SYMBOL_OUTPUT_FILE = "symbol_output.json"
-REVISION_FILE = "revision.txt"
-REFINED_SEQ_OUTPUT_FILE = "revised_seq_output.json"
+# Configuration and file path constants loaded from configure.yml
+from utils.configure import get_generation_config_path, get_output_file_name
+
+REFINE_SEQ_CONFIG_PATH = get_generation_config_path(
+    "REFINE_SEQ_CONFIG_PATH") or "generation/config/refine_seq.json"
+SEQ_OUTPUT_FILE = get_output_file_name("SEQ_OUTPUT_FILE") or "seq_output.json"
+SYMBOL_OUTPUT_FILE = get_output_file_name(
+    "SYMBOL_OUTPUT_FILE") or "symbol_output.json"
+REVISION_FILE = get_output_file_name("REVISION_FILE") or "revision.txt"
+REFINED_SEQ_OUTPUT_FILE = get_output_file_name(
+    "REFINED_SEQ_OUTPUT_FILE") or "revised_seq_output.json"
 
 
 def generate_refined_sequence():

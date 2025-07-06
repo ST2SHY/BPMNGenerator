@@ -13,9 +13,13 @@ from utils.load_requirement import get_reqstring
 from utils.dump import get_data_from_file_or_generate, save_result
 
 
-# Configuration path - can be moved to external config file later
-SYMBOL_CONFIG_PATH = "generation/config/symbol.json"
-SYMBOL_OUTPUT_FILE = "symbol_output.json"
+# Configuration paths loaded from configure.yml
+from utils.configure import get_generation_config_path, get_output_file_name
+
+SYMBOL_CONFIG_PATH = get_generation_config_path(
+    "SYMBOL_CONFIG_PATH") or "generation/config/symbol.json"
+SYMBOL_OUTPUT_FILE = get_output_file_name(
+    "SYMBOL_OUTPUT_FILE") or "symbol_output.json"
 
 
 def add_start_end_tasks(extracted_output):

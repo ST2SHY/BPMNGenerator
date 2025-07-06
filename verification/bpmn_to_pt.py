@@ -9,7 +9,72 @@ from typing import Dict, List, Tuple, Set, Any
 import xml.etree.ElementTree as ET
 import json
 
-example = ''
+
+def save_petri_net_as_pnml(petri_net: Dict[str, Any], output_file: str):
+    """
+    Save Petri net data as PNML (Petri Net Markup Language) format.
+
+    Args:
+        petri_net: Petri net data structure
+        output_file: Output file path
+    """
+    # Import configuration functions
+    from utils.configure import get_petri_net_config, get_naming_convention
+
+    # Create PNML XML structure
+    root = ET.Element('pnml')
+
+    # Add net element
+    net = ET.SubElement(root, 'net')
+    net_id = get_petri_net_config('NET_ID')
+    net.set('id', str(net_id) if net_id is not None else 'bpmn_converted_net')
+    net_type = get_petri_net_config('NET_TYPE')
+    net.set('type', str(net_type)
+            if net_type is not None else 'http://www.pnml.org/version-2009/grammar/pnmlcoremodel')
+
+    # Add page element
+    page = ET.SubElement(net, 'page')
+    page_id = get_petri_net_config('PAGE_ID')
+    page.set('id', str(page_id) if page_id is not None else 'page1')
+
+    # Add places
+    for place_id in petri_net['places']:
+        place = ET.SubElement(page, 'place')
+        place.set('id', place_id)
+
+        # Add name
+        name = ET.SubElement(place, 'name')
+        text = ET.SubElement(name, 'text')
+        text.text = place_id
+
+        # Add initial marking if present
+        if place_id in petri_net['initial_marking']:
+            marking = ET.SubElement(place, 'initialMarking')
+            text = ET.SubElement(marking, 'text')
+            text.text = str(petri_net['initial_marking'][place_id])
+
+    # Add transitions
+    for transition_id in petri_net['transitions']:
+        transition = ET.SubElement(page, 'transition')
+        transition.set('id', transition_id)
+
+        # Add name
+        name = ET.SubElement(transition, 'name')
+        text = ET.SubElement(name, 'text')
+        text.text = transition_id
+
+    # Add arcs
+    arc_prefix = get_naming_convention('ARC_PREFIX')
+    for i, arc in enumerate(petri_net['arcs']):
+        arc_elem = ET.SubElement(page, 'arc')
+        arc_elem.set('id', f'{arc_prefix}{i}')
+        arc_elem.set('source', arc['source'])
+        arc_elem.set('target', arc['target'])
+
+    # Write to file
+    tree = ET.ElementTree(root)
+    ET.indent(tree, space="  ")
+    tree.write(output_file, encoding='utf-8', xml_declaration=True)
 
 
 class MultiLaneBpmnToPetriNetConverter:
@@ -149,19 +214,29 @@ class MultiLaneBpmnToPetriNetConverter:
             'final_markings': []
         }
 
+        # Import configuration functions
+        from utils.configure import get_naming_convention
+
         # Add start and end places
-        start_place = f"p_start_{lane_info['name']}"
-        end_place = f"p_end_{lane_info['name']}"
+        start_prefix = get_naming_convention(
+            'START_PLACE_PREFIX') or 'p_start_'
+        end_prefix = get_naming_convention('END_PLACE_PREFIX') or 'p_end_'
+        start_place = f"{start_prefix}{lane_info['name']}"
+        end_place = f"{end_prefix}{lane_info['name']}"
 
         petri_net['places'].extend([start_place, end_place])
         petri_net['initial_marking'][start_place] = 1
 
         # Create transitions and places for each task
+        pre_prefix = get_naming_convention('PRE_PLACE_PREFIX') or 'p_pre_'
+        post_prefix = get_naming_convention('POST_PLACE_PREFIX') or 'p_post_'
+        transition_prefix = get_naming_convention('TRANSITION_PREFIX') or 't_'
+
         for task in process_info['tasks']:
             task_id = task['id']
-            pre_place = f"p_pre_{task_id}"
-            post_place = f"p_post_{task_id}"
-            transition = f"t_{task_id}"
+            pre_place = f"{pre_prefix}{task_id}"
+            post_place = f"{post_prefix}{task_id}"
+            transition = f"{transition_prefix}{task_id}"
 
             petri_net['places'].extend([pre_place, post_place])
             petri_net['transitions'].append(transition)
@@ -177,9 +252,9 @@ class MultiLaneBpmnToPetriNetConverter:
 
             if 'Exclusive' in gateway_type or 'Inclusive' in gateway_type:
                 # Exclusive or inclusive gateway
-                pre_place = f"p_pre_{gateway_id}"
-                post_place = f"p_post_{gateway_id}"
-                transition = f"t_{gateway_id}"
+                pre_place = f"{pre_prefix}{gateway_id}"
+                post_place = f"{post_prefix}{gateway_id}"
+                transition = f"{transition_prefix}{gateway_id}"
 
                 petri_net['places'].extend([pre_place, post_place])
                 petri_net['transitions'].append(transition)
@@ -189,9 +264,9 @@ class MultiLaneBpmnToPetriNetConverter:
                 ])
             elif 'Parallel' in gateway_type:
                 # Parallel gateway
-                pre_place = f"p_pre_{gateway_id}"
-                post_place = f"p_post_{gateway_id}"
-                transition = f"t_{gateway_id}"
+                pre_place = f"{pre_prefix}{gateway_id}"
+                post_place = f"{post_prefix}{gateway_id}"
+                transition = f"{transition_prefix}{gateway_id}"
 
                 petri_net['places'].extend([pre_place, post_place])
                 petri_net['transitions'].append(transition)
@@ -213,13 +288,13 @@ class MultiLaneBpmnToPetriNetConverter:
             if any(start['id'] == source for start in process_info['start_events']):
                 source_place = start_place
             else:
-                source_place = f"p_post_{source}"
+                source_place = f"{post_prefix}{source}"
 
             # Check if it's an end event
             if any(end['id'] == target for end in process_info['end_events']):
                 target_place = end_place
             else:
-                target_place = f"p_pre_{target}"
+                target_place = f"{pre_prefix}{target}"
 
             # Add connection arc
             if source_place in petri_net['places'] and target_place in petri_net['places']:
@@ -257,17 +332,24 @@ class MultiLaneBpmnToPetriNetConverter:
             merged_net['arcs'].extend(petri_net['arcs'])
             merged_net['initial_marking'].update(petri_net['initial_marking'])
 
+        # Import configuration functions
+        from utils.configure import get_naming_convention
+
         # Handle message flows
+        message_prefix = get_naming_convention(
+            'MESSAGE_PLACE_PREFIX') or 'p_msg_'
+        transition_prefix = get_naming_convention('TRANSITION_PREFIX') or 't_'
+
         for msg_flow in message_flows:
             source = msg_flow['source']
             target = msg_flow['target']
 
             # Create message place for each message flow
-            message_place = f"p_msg_{msg_flow['id']}"
+            message_place = f"{message_prefix}{msg_flow['id']}"
             merged_net['places'].append(message_place)
 
             # Connect source transition to message place
-            source_transition = f"t_{source}"
+            source_transition = f"{transition_prefix}{source}"
             if source_transition in merged_net['transitions']:
                 merged_net['arcs'].append({
                     'source': source_transition,
@@ -275,7 +357,7 @@ class MultiLaneBpmnToPetriNetConverter:
                 })
 
             # Connect message place to target transition
-            target_transition = f"t_{target}"
+            target_transition = f"{transition_prefix}{target}"
             if target_transition in merged_net['transitions']:
                 merged_net['arcs'].append({
                     'source': message_place,
@@ -343,10 +425,9 @@ def convert_bpmn_to_petri_net(bpmn_file_path: str):
         print(f"Number of arcs: {len(petri_net['arcs'])}")
         print(f"Initial marking: {petri_net['initial_marking']}")
 
-        # Save results
-        output_file = bpmn_file_path.replace('.bpmn', '_petri_net.json')
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(petri_net, f, ensure_ascii=False, indent=2)
+        # Save results as PNML
+        output_file = bpmn_file_path.replace('.bpmn', '_petri_net.pnml')
+        save_petri_net_as_pnml(petri_net, output_file)
         print(f"Petri net saved to: {output_file}")
 
     else:
@@ -364,12 +445,56 @@ def convert_bpmn_to_petri_net(bpmn_file_path: str):
         print(f"Number of arcs: {len(petri_net['arcs'])}")
         print(f"Initial marking: {petri_net['initial_marking']}")
 
-        # Save results
-        output_file = bpmn_file_path.replace('.bpmn', '_petri_net.json')
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(petri_net, f, ensure_ascii=False, indent=2)
+        # Save results as PNML
+        output_file = bpmn_file_path.replace('.bpmn', '_petri_net.pnml')
+        save_petri_net_as_pnml(petri_net, output_file)
         print(f"Petri net saved to: {output_file}")
 
 
 if __name__ == "__main__":
-    convert_bpmn_to_petri_net(example)
+    # Get BPMN file path from workplace configuration
+    from utils.configure import get_workplace, get_petri_net_config
+    import os
+
+    workplace = get_workplace()
+
+    # Look for BPMN file in workplace directory
+    # Get possible BPMN file names from configuration
+    possible_bpmn_files = get_petri_net_config('BPMN_INPUT_FILES') or [
+        "bpmn_output.bpmn",
+        "workflow.bpmn",
+        "process.bpmn",
+        "model.bpmn"
+    ]
+
+    bpmn_file_path = None
+
+    # First check if there's a specific BPMN file mentioned in configuration
+    # You can add BPMN_INPUT_FILE to configure.yml if needed
+    for filename in possible_bpmn_files:
+        file_path = os.path.join(workplace, filename)
+        if os.path.exists(file_path):
+            bpmn_file_path = file_path
+            print(f"Found BPMN file: {bpmn_file_path}")
+            break
+
+    if bpmn_file_path is None:
+        # If no BPMN file found, look for any .bpmn file in workplace
+        for file in os.listdir(workplace):
+            if file.endswith('.bpmn'):
+                bpmn_file_path = os.path.join(workplace, file)
+                print(f"Found BPMN file: {bpmn_file_path}")
+                break
+
+    if bpmn_file_path is None:
+        print("No BPMN file found in workplace directory.")
+        print("Please ensure a BPMN file exists in the workplace directory.")
+        print("Expected file names: bpmn_output.bpmn, workflow.bpmn, process.bpmn, or any .bpmn file")
+        exit(1)
+
+    try:
+        convert_bpmn_to_petri_net(bpmn_file_path)
+        print("BPMN to Petri net conversion completed successfully!")
+    except Exception as e:
+        print(f"Error during conversion: {e}")
+        exit(1)

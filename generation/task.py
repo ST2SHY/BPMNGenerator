@@ -16,9 +16,13 @@ from utils.dump import get_data_from_file_or_generate, save_result, save_result_
 from generation.symbol import get_symbol_data
 
 
-# Configuration path - can be moved to external config file later
-TASK_CONFIG_PATH = "generation/config/task.json"
-TASK_OUTPUT_FILE = "task_output.json"
+# Configuration paths loaded from configure.yml
+from utils.configure import get_generation_config_path, get_output_file_name
+
+TASK_CONFIG_PATH = get_generation_config_path(
+    "TASK_CONFIG_PATH") or "generation/config/task.json"
+TASK_OUTPUT_FILE = get_output_file_name(
+    "TASK_OUTPUT_FILE") or "task_output.json"
 
 
 def get_task_data():
